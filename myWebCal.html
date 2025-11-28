@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>آلة حاسبةعلمية</title>
+  <style>
+    body {
+      font-family: "Cairo", sans-serif;
+      background-color: #4b1763;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .calculator {
+      background-color: #eb2abae9;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(151, 86, 127, 0.823);
+      width: 400px;
+      padding: 20px;
+    }
+    .display {
+      background-color: #c8dcdc;
+      color: rgb(2, 39, 14);
+      font-size: 2em;
+      text-align: right;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      overflow-x: auto;
+      direction: ltr;
+    }
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+    button {
+      font-size: 1.2em;
+      padding: 15px;
+      border: none;
+      border-radius: 8cap;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { 
+      color: hwb(316 10% 75% / 0.776);
+    }
+    .equal {
+      background-color: rgba(170, 0, 0, 0.63);
+      color: #010000;
+      border-radius:1cap;
+      grid-row: span 2;
+      grid-column: 4;
+      height: 100%;
+    }
+    .clear {
+      background-color: rgba(170, 0, 0, 0.63);
+      color: rgb(30, 3, 3);
+      
+    }
+  </style>
+</head>
+<body>
+
+<div class="calculator">
+  <div class="display" id="display">0</div>
+
+  <div class="buttons">
+
+    <button onclick="operation('(')">(</button>
+    <button onclick="operation(')')">)</button>
+    <button onclick="deleteLast()">DEL</button>
+    <button class="clear" onclick="clearDisplay()">C</button>
+
+    <button onclick="sqrt()">√</button>
+    <button onclick="operation('%')">%</button>
+    <button onclick="operation('/')">÷</button>
+    <button onclick="operation('+')">+</button>
+
+    <button onclick="appendNumber('3')">3</button>
+    <button onclick="appendNumber('2')">2</button>
+    <button onclick="appendNumber('1')">1</button>
+    <button onclick="operation('-')">−</button>
+
+    <button onclick="appendNumber('6')">6</button>
+    <button onclick="appendNumber('5')">5</button>
+    <button onclick="appendNumber('4')">4</button>
+    <button onclick="operation('*')">×</button>
+
+    <button onclick="appendNumber('9')">9</button>
+    <button onclick="appendNumber('8')">8</button>
+    <button onclick="appendNumber('7')">7</button>
+    <button onclick="operation('^')"> ^ </button>
+
+    <button onclick="appendNumber('0')" style="grid-column: span 2; background-color: rgba(249, 94, 94);">0</button>
+    <button onclick="appendNumber('.')" style="background-color: rgb(249, 94, 94);" >.</button>
+
+    <button onclick="butInv()" id="Inv" style="background-color: rgb(240, 94, 94);">Inv</button>
+
+    <button  onclick="applyFunc('cos')" id="cos">cos</button>
+    <button  onclick="applyFunc('sin')" id="sin">sin</button>
+    <button  onclick="applyFunc('tan')" id="tan">tan</button>
+
+    <button onclick="insertAns()" style="background-color: rgb(240, 94, 94)">Ans</button>
+    <button onclick="invNumber()">1/x</button>
+  
+    <button onclick="insertE()">e</button>
+    <button onclick="insertPi()">π</button>
+
+    <button class="equal" onclick="equal()">=</button>
+    <button onclick="log10()">log</button>
+    <button onclick="ln()">ln</button>
+    <button onclick="factorialButton()">!x</button>
+    
+  </div>
+</div>
+
+<script>
+  let display = document.getElementById('display');
+  let inverseMode = false;
+  let current = 0;
+  let currentOperator = null;
+  let newInput = true;
+  let lastAnswer = 0;
+
+  function appendNumber(num) {
+    if (display.textContent === "0" || newInput) {
+      display.textContent = num;
+    } else {
+      display.textContent += num;
+    }
+    newInput = false;
+  }
+
+  function operation(op) {
+    if (display.textContent === "0" && op !== "(") return;
+
+    let last = display.textContent.slice(-1);
+
+    if ("+-*/%^".includes(last) && "+-*/%^".includes(op)) {
+      display.textContent = display.textContent.slice(0, -1) + op;
+    } else {
+      display.textContent += op;
+    }
+
+    newInput = false;
+  }
+
+  function equal() {
+    try {
+      let expr = display.textContent;
+
+      // تحويل الرموز الأساسية
+      expr = expr.replace(/×/g, "*")
+                .replace(/÷/g, "/")
+                .replace(/\^/g, "**");
+
+      // تحويل الدوال مع دعم INV
+      if (!inverseMode) {
+        // دوال عادية: sin, cos, tan, log, ln
+        expr = expr
+          .replace(/sin\(/g, "Math.sin(")
+          .replace(/cos\(/g, "Math.cos(")
+          .replace(/tan\(/g, "Math.tan(")
+          .replace(/log\(/g, "Math.log10(")
+          .replace(/ln\(/g, "Math.log(");
+
+        // تحويل الزوايا من درجات → راديان
+        expr = expr.replace(/Math\.sin\(([^)]+)\)/g, "Math.sin(($1)*Math.PI/180)");
+        expr = expr.replace(/Math\.cos\(([^)]+)\)/g, "Math.cos(($1)*Math.PI/180)");
+        expr = expr.replace(/Math\.tan\(([^)]+)\)/g, "Math.tan(($1)*Math.PI/180)");
+
+      } else {
+        // الدوال العكسية: sin⁻¹, cos⁻¹, tan⁻¹
+        expr = expr
+          .replace(/sin\(/g, "Math.asin(")
+          .replace(/cos\(/g, "Math.acos(")
+          .replace(/tan\(/g, "Math.atan(");
+
+        // تحويل من راديان → درجات
+        expr = expr.replace(/Math\.asin\(([^)]+)\)/g, "(Math.asin($1)*180/Math.PI)");
+        expr = expr.replace(/Math\.acos\(([^)]+)\)/g, "(Math.acos($1)*180/Math.PI)");
+        expr = expr.replace(/Math\.atan\(([^)]+)\)/g, "(Math.atan($1)*180/Math.PI)");
+
+        // log و ln لا تتأثر بالINV
+        expr = expr.replace(/log\(/g, "Math.log10(")
+                  .replace(/ln\(/g, "Math.log(");
+      }
+
+      let result = eval(expr);  // حساب التعبير بالكامل
+
+      lastAnswer = result;
+      display.textContent = result;
+      newInput = true;
+
+    } catch (e) {
+      display.textContent = "math error";
+      newInput = true;
+    }
+  }
+
+
+
+  /* ================= زر DEL ================= */
+  function deleteLast() {
+    let val = display.textContent;
+    display.textContent = val.length > 1 ? val.slice(0, -1) : "0";
+  }
+
+  function clearDisplay() {
+    display.textContent = "0";
+    current = 0;
+    currentOperator = null;
+    newInput = true;
+  }
+
+  /* ================= زر INV ================= */
+  function butInv() {
+    inverseMode = !inverseMode;
+
+    document.getElementById("sin").textContent = inverseMode ? "sin⁻¹" : "sin";
+    document.getElementById("cos").textContent = inverseMode ? "cos⁻¹" : "cos";
+    document.getElementById("tan").textContent = inverseMode ? "tan⁻¹" : "tan";
+  }
+
+  /* ========== دوال الجيب والجتا والظل ========= */
+  function applyFunc(func) {
+  // إذا الشاشة تحتوي 0 فقط، امسحها قبل إضافة الدالة
+    if (display.textContent === "0" || newInput) {
+      display.textContent = "";
+    }
+
+    display.textContent += func + "(";
+    newInput = false;
+  }
+    
+  /* ========== الجذر ========== */
+  function sqrt() {
+    let val = parseFloat(display.textContent);
+    display.textContent = Math.sqrt(val);
+    newInput = true;
+  }
+
+  /* ========== 1/x ========== */
+  function invNumber() {
+    display.textContent = "1/(" + display.textContent + ")";
+    newInput = false;
+  }
+
+  /* ========== π ========== */
+  function insertPi() {
+    if (display.textContent === "0"){
+      display.textContent = Math.PI;
+    }
+    else{
+     display.textContent += Math.PI; 
+    }
+    
+    newInput = false;
+  }
+
+  /* ========== e ========== */
+  function insertE() {
+    if (display.textContent === "0" || newInput){
+      display.textContent = Math.E;
+
+    }else {
+      display.textContent += Math.E;
+    }
+    newInput = false;
+  }
+
+  /* ========== ln ========== */
+  function ln() {
+    if (display.textContent === "0" || newInput) {
+      display.textContent = "";
+    }
+
+    display.textContent += "ln(";
+    newInput = false;
+  }
+
+  /* ========== log ========== */
+  function log10() {
+    if (display.textContent === "0" || newInput) {
+      display.textContent = "";
+    }
+
+    display.textContent += "log(";
+    newInput = false;
+  }
+
+  /* ========== x! ========== */
+  function factorialButton() {
+    display.textContent = "fact(" + display.textContent + ")";
+    newInput = false;
+  }
+
+  function fact(n) {
+    if (n < 0) return NaN;
+    let r = 1;
+    for (let i = 2; i <= n; i++) r *= i;
+    return r;
+  }
+
+  /* ========== Ans ========== */
+  function insertAns() {
+    display.textContent += lastAnswer;
+    newInput = false;
+  }
+
+</script>
+
+</body>
+</html>
